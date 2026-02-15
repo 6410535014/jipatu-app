@@ -5,34 +5,41 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          // พื้นหลัง
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFFED158),
-              Color(0xFFFF5757),
-              Color(0xFF650620),
-            ],
-          ),
-          // ลายพื้นหลัง
-          image: DecorationImage(
-            image: AssetImage('assets/images/marble.png'),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              Colors.white.withOpacity(0.12), // ความจางของลาย
-              BlendMode.dstATop, // โหมดการผสมสี
+      body: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [ 
+                  Color(0xFFFED158),
+                  Color(0xFFFF5757),
+                  Color(0xFF650620),
+                ],
+              ),
             ),
           ),
-        ),
+        
+          Opacity(
+            opacity: 0.1,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage('assets/images/marble.png'),
+                  fit: BoxFit.cover,
+                  repeat: ImageRepeat.repeat,
+                ),
+              ),
+            ),
+          ),
 
-
-        child: SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: 40),
+          SingleChildScrollView(
+            padding: EdgeInsets.symmetric(horizontal: 40),
             child: Column(
               children: [
                 SizedBox(height: 100),
@@ -101,7 +108,8 @@ class LoginPage extends StatelessWidget {
                 Text("@Thammasat", style: TextStyle(color: Colors.white, fontSize: 16)),
               ],
             ),
-        ),
+          ),
+        ],
       ),
     );
   }
