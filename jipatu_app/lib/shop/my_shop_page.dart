@@ -344,7 +344,15 @@ class _MyShopPageState extends State<MyShopPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            IconButton(onPressed: () {}, icon: const Icon(Icons.grid_view_rounded, color: Colors.white, size: 30)),
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const OrderStatusPage()),
+                );
+              }, 
+              icon: const Icon(Icons.grid_view_rounded, color: Colors.white, size: 30),
+            ),
             IconButton(onPressed: () {}, icon: const Icon(Icons.home_outlined, color: Colors.white, size: 30)),
             IconButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StockMainPage())),

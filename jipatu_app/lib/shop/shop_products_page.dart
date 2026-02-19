@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -73,13 +74,47 @@ class ShopProductsPage extends StatelessWidget {
                     ],
                   ),
                   onTap: () {
-                    // สำหรับลูกค้ากดเพื่อดูรายละเอียดหรือสั่งซื้อ
+                    _showAddToCartDialog(context, data);
                   },
                 ),
               );
             },
           );
         },
+      ),
+    );
+  }
+  
+  void _showAddToCartDialog(BuildContext context, Map<String, dynamic> productData) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("เพิ่มลงในตะกร้า?"),
+        content: Text("ต้องการเพิ่ม ${productData['name']} ลงในตะกร้าใช่หรือไม่?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
+          ElevatedButton(
+            onPressed: () async {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid)
+                    .collection('cart')
+                    .add({
+                  'productId': productData['id'],
+                  'name': productData['name'],
+                  'price': productData['price'],
+                  'shopId': shopId, // จากตัวแปรในคลาส
+                  'customerName': user.displayName ?? "Customer",
+                  'addedAt': FieldValue.serverTimestamp(),
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text("เพิ่ม"),
+          ),
+        ],
       ),
     );
   }

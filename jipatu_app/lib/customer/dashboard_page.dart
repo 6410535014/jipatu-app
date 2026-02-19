@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:jipatu_app/customer/my_cart_page.dart';
+import 'package:jipatu_app/customer/my_orders_page.dart';
 import 'profile_page.dart';
 import 'package:jipatu_app/shop/shop_products_page.dart';
 
@@ -20,8 +22,8 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Widget> _getPages() {
     return [
       _buildHomeContent(), // หน้าหลักที่มี Search และรายการร้านค้า
-      const Center(child: Text('Your Cart')),
-      const Center(child: Text('Your Orders')),
+      MyCartPage(),
+      MyOrdersPage(),
       const ProfilePage(),
     ];
   }
