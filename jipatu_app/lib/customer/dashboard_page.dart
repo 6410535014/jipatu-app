@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:jipatu_app/customer/my_cart_page.dart';
-import 'package:jipatu_app/customer/my_orders_page.dart';
+import 'package:jipatu_app/customer/my_order_page.dart';
 import 'profile_page.dart';
 import 'package:jipatu_app/shop/shop_products_page.dart';
 
@@ -15,13 +15,12 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
-  String _searchQuery = ""; // สำหรับเก็บคำค้นหา
-  String? _selectedCategory; // เพิ่มตัวแปรนี้ด้านบนคู่กับ _searchQuery
+  String _searchQuery = "";
+  String? _selectedCategory;
 
-  // เปลี่ยน _pages ให้เป็นฟังก์ชันหรือเก็บค่าแบบ Dynamic เพื่อให้รับค่าการค้นหาได้
   List<Widget> _getPages() {
     return [
-      _buildHomeContent(), // หน้าหลักที่มี Search และรายการร้านค้า
+      _buildHomeContent(),
       MyCartPage(),
       MyOrdersPage(),
       const ProfilePage(),
@@ -34,18 +33,15 @@ class _DashboardPageState extends State<DashboardPage> {
     });
   }
 
-  // --- ส่วนประกอบของหน้า Home ---
 
 Widget _buildHomeContent() {
     return SafeArea(
       child: Column(
         children: [
-          // 1. Search Box พร้อมการไล่สี
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Container(
               decoration: BoxDecoration(
-                // กำหนดการไล่สีจาก FFD359 ไป FF5757
                 gradient: const LinearGradient(
                   colors: [Color(0xFFFFD359), Color(0xFFFF5757)],
                   begin: Alignment.centerLeft,
@@ -55,12 +51,12 @@ Widget _buildHomeContent() {
               ),
               child: TextField(
                 onChanged: (value) => setState(() => _searchQuery = value.trim()),
-                style: const TextStyle(color: Colors.black), // ปรับสีตัวอักษรให้เข้ากับพื้นหลัง
+                style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: "Search store name...",
                   hintStyle: const TextStyle(color: Colors.black),
                   prefixIcon: const Icon(Icons.search, color: Colors.black),
-                  border: InputBorder.none, // ลบเส้นขอบเดิมออก
+                  border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                 ),
               ),
@@ -72,7 +68,6 @@ Widget _buildHomeContent() {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Categories และ Shop List (โค้ดเดิม)
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 16.0),
                     child: Text("Categories", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
@@ -118,7 +113,6 @@ Widget _buildHomeContent() {
             child: GestureDetector(
               onTap: () {
                 setState(() {
-                  // ถ้ากดซ้ำที่เดิมให้ยกเลิกการกรอง (แสดงทั้งหมด) ถ้ากดอันใหม่ให้กรองตามอันนั้น
                   _selectedCategory = isSelected ? null : catName;
                 });
               },
@@ -126,7 +120,6 @@ Widget _buildHomeContent() {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    // เปลี่ยนสีพื้นหลังถ้าถูกเลือก
                     backgroundColor: isSelected ? Colors.orange[700] : const Color(0xFFFFD54F),
                     child: Icon(
                       categories[index]['icon'] as IconData, 
@@ -153,10 +146,8 @@ Widget _buildHomeContent() {
 
   Widget _buildShopList() {
     final currentUser = FirebaseAuth.instance.currentUser;
-    // ดึงข้อมูลจากคอลเลกชัน 'shops' หลัก
     Query query = FirebaseFirestore.instance.collection('shops');
 
-    // ถ้ามีการพิมพ์ค้นหา ให้กรองตามชื่อร้าน (Store Name)
     if (_searchQuery.isNotEmpty) {
       query = query.where('storeName', isGreaterThanOrEqualTo: _searchQuery)
                    .where('storeName', isLessThanOrEqualTo: '$_searchQuery\uf8ff');
@@ -167,14 +158,17 @@ Widget _buildHomeContent() {
     }
 
     return StreamBuilder<QuerySnapshot>(
-      stream: query.snapshots(),
+      stream: FirebaseFirestore.instance
+        .collection('shops')
+        .where('isOpen', isEqualTo: true)
+        .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) return const Center(child: Text("Something went wrong"));
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
 
         final docs = snapshot.data?.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
-          return data['ownerUid'] != currentUser?.uid; // คืนค่าเฉพาะร้านที่เจ้าของไม่ใช่เรา
+          return data['ownerUid'] != currentUser?.uid;
         }).toList() ?? [];
         
         if (docs.isEmpty) {
@@ -208,12 +202,10 @@ Widget _buildHomeContent() {
                 subtitle: Text(isOpen ? "Open" : "Closed", style: TextStyle(color: isOpen ? Colors.green : Colors.red)),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
-                  // นำทางไปยังหน้าร้านค้าสำหรับลูกค้า
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ShopProductsPage(
-                        // ใช้ ownerUid เป็น shopId เพื่อไปดึงสินค้าใน sub-collection
                         shopId: data['ownerUid'] ?? '', 
                         shopName: name,
                       ),
@@ -227,8 +219,6 @@ Widget _buildHomeContent() {
       },
     );
   }
-
-  // --- ส่วนของ UI เดิม (Bottom Nav) ---
 
   Widget _buildGradientIcon(IconData icon, bool isSelected) {
     return ShaderMask(

@@ -15,7 +15,7 @@ class _AddStockPageState extends State<AddStockPage> {
   late TextEditingController _nameController;
   late TextEditingController _descController;
   late TextEditingController _priceController;
-  bool _isSaving = false; // สำหรับแสดงสถานะการบันทึก
+  bool _isSaving = false;
   
   XFile? _imageFile; 
   final ImagePicker _picker = ImagePicker();
@@ -32,7 +32,6 @@ class _AddStockPageState extends State<AddStockPage> {
     }
   }
 
-  // 2. ฟังก์ชันสำหรับบันทึกข้อมูลลง Firestore
   Future<void> _saveProductToFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || _nameController.text.isEmpty) return;
@@ -40,7 +39,6 @@ class _AddStockPageState extends State<AddStockPage> {
     setState(() => _isSaving = true);
 
     try {
-      // ค้นหาเอกสารร้านค้าของผู้ใช้ใน users > uid > shop
       final shopSnapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -49,7 +47,6 @@ class _AddStockPageState extends State<AddStockPage> {
           .get();
 
       if (shopSnapshot.docs.isNotEmpty) {
-        // อ้างอิงเอกสารร้านค้า
         DocumentReference shopRef = shopSnapshot.docs.first.reference;
 
         final productData = {
@@ -60,16 +57,14 @@ class _AddStockPageState extends State<AddStockPage> {
         };
 
         if (widget.existingItem != null && widget.existingItem!['id'] != null) {
-          // กรณีแก้ไขสินค้าเดิม (ถ้าคุณส่ง id มาด้วยใน existingItem)
           await shopRef.collection('products').doc(widget.existingItem!['id']).update(productData);
         } else {
-          // กรณีเพิ่มสินค้าใหม่
           productData['createdAt'] = FieldValue.serverTimestamp();
           await shopRef.collection('products').add(productData);
         }
 
         if (mounted) {
-          Navigator.pop(context, true); // ส่งค่า true กลับไปเพื่อให้หน้าก่อนหน้า Refresh ข้อมูล
+          Navigator.pop(context, true);
         }
       }
     } catch (e) {
@@ -100,7 +95,6 @@ class _AddStockPageState extends State<AddStockPage> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                // ส่วนรูปภาพ (คุณสามารถลบทิ้งได้เลยหากไม่ต้องการใช้งานแล้ว)
                 const Icon(Icons.inventory_2, size: 80, color: Colors.grey),
                 const SizedBox(height: 20),
                 
@@ -115,7 +109,7 @@ class _AddStockPageState extends State<AddStockPage> {
                   width: double.infinity, height: 50,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: isEditing ? Colors.orange : Colors.green),
-                    onPressed: _isSaving ? null : _saveProductToFirestore, // เรียกฟังก์ชันบันทึก
+                    onPressed: _isSaving ? null : _saveProductToFirestore,
                     child: Text(isEditing ? "Update Menu" : "Save Menu", style: const TextStyle(color: Colors.white, fontSize: 18)),
                   ),
                 ),

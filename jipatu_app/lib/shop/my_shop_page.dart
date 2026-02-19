@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jipatu_app/customer/dashboard_page.dart';
+import 'package:jipatu_app/shop/summary_page.dart';
 import 'edit_shop_profile.dart';
 import 'payment_info.dart';
 import 'stock_main.dart';
@@ -58,7 +59,7 @@ class _MyShopPageState extends State<MyShopPage> {
       try {
         final batch = FirebaseFirestore.instance.batch();
 
-        // 1. หาเอกสารใน users > uid > shop เพื่ออัปเดต
+        // หาใน users > uid > shop เพื่ออัปเดต
         final userShopSnapshot = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -73,7 +74,7 @@ class _MyShopPageState extends State<MyShopPage> {
           });
         }
 
-        // 2. หาเอกสารใน shops (คอลเลกชันหลัก) ที่มี ownerUid ตรงกับ user.uid
+        // หาใน shops ที่มี ownerUid ตรงกับ user.uid
         final globalShopSnapshot = await FirebaseFirestore.instance
             .collection('shops')
             .where('ownerUid', isEqualTo: user.uid)
@@ -353,7 +354,15 @@ class _MyShopPageState extends State<MyShopPage> {
               }, 
               icon: const Icon(Icons.grid_view_rounded, color: Colors.white, size: 30),
             ),
-            IconButton(onPressed: () {}, icon: const Icon(Icons.home_outlined, color: Colors.white, size: 30)),
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SummaryPage()),
+                );
+              }, 
+              icon: const Icon(Icons.home_outlined, color: Colors.white, size: 30),
+            ),
             IconButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StockMainPage())),
               icon: const Icon(Icons.inbox, color: Colors.white, size: 30),

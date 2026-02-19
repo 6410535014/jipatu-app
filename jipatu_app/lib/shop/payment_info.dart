@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'add_payment_info.dart'; 
 
-// Global Variable (เพิ่ม qrImage เข้าไป)
 Map<String, dynamic>? globalPaymentData; 
 
 class PaymentInfoPage extends StatefulWidget {

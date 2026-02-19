@@ -61,7 +61,7 @@ class MyOrdersPage extends StatelessWidget {
     switch (status) {
       case 'Accepted': return Colors.green;
       case 'Declined': return Colors.red;
-      default: return Colors.orange; // Pending
+      default: return Colors.orange;
     }
   }
 }

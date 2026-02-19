@@ -45,7 +45,7 @@ class _UserRegisterShopPageState extends State<UserRegisterShopPage> {
     try {
       String? finalImageUrl;
 
-      // 1. จัดการรูปภาพ (โค้ดเดิม)
+      // จัดการรูปภาพ
       if (_pickedImage != null) {
         if (_pickedImage is XFile) {
           File file = File((_pickedImage as XFile).path);
@@ -61,7 +61,7 @@ class _UserRegisterShopPageState extends State<UserRegisterShopPage> {
 
       // เตรียมข้อมูลที่จะบันทึก
       final shopData = {
-        'ownerUid': user.uid, // เพิ่ม uid เจ้าของเพื่อให้รู้ว่าเป็นร้านของใคร
+        'ownerUid': user.uid,
         'storeName': _storeNameController.text.trim(),
         'description': _descController.text.trim(),
         'phone': _phoneController.text.trim(),
@@ -71,14 +71,14 @@ class _UserRegisterShopPageState extends State<UserRegisterShopPage> {
         'isOpen': false,
       };
 
-      // 2. บันทึกลง Firestore (users > uid > shop) - โค้ดเดิม
+      // บันทึกลง Firestore (users > uid > shop)
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('shop')
           .add(shopData);
 
-      // 3. บันทึกลงคอลเลกชันหลัก (shops) - ส่วนที่เพิ่มใหม่ตามความต้องการของคุณ
+      // บันทึกลง shops
       await FirebaseFirestore.instance
           .collection('shops')
           .add(shopData);
@@ -116,7 +116,7 @@ class _UserRegisterShopPageState extends State<UserRegisterShopPage> {
             padding: const EdgeInsets.symmetric(horizontal: 30),
             child: Column(
               children: [
-                // Profile Circle
+                // วงกลมรอบโปรไฟล์
                 Container(
                   width: 160, height: 160,
                   decoration: BoxDecoration(
@@ -134,7 +134,7 @@ class _UserRegisterShopPageState extends State<UserRegisterShopPage> {
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFD54F)),
                 ),
                 const SizedBox(height: 30),
-                // Form
+                // ฟอร์ม
                 Container(
                   padding: const EdgeInsets.all(25),
                   decoration: BoxDecoration(color: const Color(0xFFFFD54F), borderRadius: BorderRadius.circular(30)),

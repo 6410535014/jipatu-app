@@ -111,7 +111,7 @@ class OrderStatusPage extends StatelessWidget {
   Color _getStatusColor(String status) {
     if (status == 'Accepted') return Colors.green;
     if (status == 'Declined') return Colors.red;
-    return Colors.orange; // For Pending
+    return Colors.orange;
   }
 
   void _updateStatus(DocumentSnapshot shopOrderDoc, String newStatus) async {
@@ -119,10 +119,10 @@ class OrderStatusPage extends StatelessWidget {
     final String orderId = data['orderId'];
     final String customerId = data['customerId'];
 
-    // 1. อัปเดตฝั่งร้านค้า
+    // อัปเดตฝั่งร้านค้า
     await shopOrderDoc.reference.update({'status': newStatus});
 
-    // 2. อัปเดตฝั่งลูกค้า (ต้องระบุ path ให้ตรงกับที่ลูกค้าดึงข้อมูล)
+    // อัปเดตฝั่งลูกค้า
     await FirebaseFirestore.instance
         .collection('users')
         .doc(customerId)

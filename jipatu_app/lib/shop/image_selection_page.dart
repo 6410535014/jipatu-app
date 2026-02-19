@@ -9,16 +9,14 @@ class ImageSelectionPage extends StatefulWidget {
 }
 
 class _ImageSelectionPageState extends State<ImageSelectionPage> {
-  // จำลองรายการรูปภาพ Mock (เป็น String URL)
   final List<String> _mockImages = List.generate(12, (index) => 'https://picsum.photos/200/200?random=$index');
   int? _selectedIndex;
   final ImagePicker _picker = ImagePicker();
 
-  // ฟังก์ชันเลือกรูปจากเครื่องจริง
+  // เลือกรูปจากเครื่อง
   Future<void> _pickFromGallery() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      // เมื่อได้รูปจากเครื่อง ให้ส่งกลับทันที
       if (mounted) Navigator.pop(context, image);
     }
   }
@@ -41,7 +39,6 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
       ),
       body: Column(
         children: [
-          // 1. Preview ส่วนนี้แค่โชว์ Mock ที่เลือก (ถ้าเลือกจากเครื่องจะเด้งออกไปเลย)
           Container(
             width: 160, height: 160,
             decoration: BoxDecoration(
@@ -57,7 +54,6 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
           ),
           const SizedBox(height: 20),
           
-          // 2. ปุ่มเลือกรูปจากเครื่อง (Gallery)
           GestureDetector(
             onTap: _pickFromGallery,
             child: Container(
@@ -69,7 +65,7 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.photo_library, color: Colors.black), // เปลี่ยนไอคอนให้สื่อความหมาย
+                  Icon(Icons.photo_library, color: Colors.black),
                   SizedBox(width: 10),
                   Text("Pick from Gallery", style: TextStyle(fontWeight: FontWeight.bold)),
                 ],
@@ -81,7 +77,6 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
           const Text("Or select avatar below", style: TextStyle(color: Colors.grey)),
           const SizedBox(height: 10),
 
-          // 3. Grid Mock Images
           Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 30),
@@ -121,7 +116,6 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
             ),
           ),
 
-          // 4. ปุ่ม Confirm (สำหรับกรณีเลือก Mock Image)
           Padding(
             padding: const EdgeInsets.all(30.0),
             child: SizedBox(
@@ -129,7 +123,6 @@ class _ImageSelectionPageState extends State<ImageSelectionPage> {
               height: 55,
               child: ElevatedButton(
                 onPressed: () {
-                  // ถ้าเลือก Mock Image ให้ส่ง String URL กลับไป
                   if (_selectedIndex != null) {
                     Navigator.pop(context, _mockImages[_selectedIndex!]);
                   } else {

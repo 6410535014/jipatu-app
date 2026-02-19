@@ -33,7 +33,6 @@ class MyCartPage extends StatelessWidget {
           final cartItems = snapshot.data?.docs ?? [];
           if (cartItems.isEmpty) return const Center(child: Text("ไม่มีสินค้าในตะกร้า"));
 
-          // คำนวณราคารวมทั้งหมด
           double totalPrice = cartItems.fold(0, (sum, item) {
             final data = item.data() as Map<String, dynamic>;
             return sum + (double.tryParse(data['price'].toString()) ?? 0);
@@ -60,7 +59,6 @@ class MyCartPage extends StatelessWidget {
                   },
                 ),
               ),
-              // ส่วนแสดงราคารวมและปุ่มสั่งซื้อ
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -101,15 +99,11 @@ class MyCartPage extends StatelessWidget {
     );
   }
 
-  // Pop-up ยืนยันการสั่งซื้อ
   void _showConfirmOrderDialog(BuildContext context, List<QueryDocumentSnapshot> items, String uid) async {
-    // ดึงข้อมูล username จาก Firestore collection 'users'
     DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
     
-    // สมมติว่าคุณเก็บชื่อผู้ใช้ในฟิลด์ชื่อ 'username' หรือ 'name'
     String? username = userDoc.exists ? (userDoc.data() as Map<String, dynamic>)['username'] : null;
     
-    // หากไม่มี username ใน database ให้ลองใช้ displayName หรือสุดท้ายคือ "ไม่ระบุชื่อ"
     String finalCustomerName = username ?? FirebaseAuth.instance.currentUser?.displayName ?? "ไม่ระบุชื่อ";
 
     showDialog(
@@ -121,7 +115,7 @@ class MyCartPage extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
           ElevatedButton(
             onPressed: () {
-              _checkout(context, items, uid, finalCustomerName); // ส่งชื่อที่ดึงได้เข้าไป
+              _checkout(context, items, uid, finalCustomerName);
               Navigator.pop(context);
             },
             child: const Text("ยืนยันการสั่งซื้อ"),
@@ -134,10 +128,8 @@ class MyCartPage extends StatelessWidget {
   void _checkout(BuildContext context, List<QueryDocumentSnapshot> items, String uid, String customerName) async {
     for (var item in items) {
       final data = item.data() as Map<String, dynamic>;
-      // สร้าง ID ออเดอร์ให้ตรงกันทั้งสองฝั่ง
       final orderId = DateTime.now().millisecondsSinceEpoch.toString() + items.indexOf(item).toString();
 
-      // 1. บันทึกลง 'orders' ของลูกค้า
       await FirebaseFirestore.instance.collection('users').doc(uid).collection('orders').doc(orderId).set({
         ...data,
         'orderId': orderId,
@@ -145,17 +137,16 @@ class MyCartPage extends StatelessWidget {
         'orderDate': FieldValue.serverTimestamp(),
       });
 
-      // 2. บันทึกลง 'incoming_orders' ของร้านค้า
       await FirebaseFirestore.instance.collection('users').doc(data['shopId']).collection('incoming_orders').doc(orderId).set({
         ...data,
         'orderId': orderId,
         'customerId': uid,
-        'customerName': customerName, // ใช้ชื่อที่ดึงมาจาก Firestore
+        'customerName': customerName,
         'status': 'Pending',
         'orderDate': FieldValue.serverTimestamp(),
+        'price': data['price'],
       });
 
-      // 3. ลบสินค้าออกจากตะกร้า
       await item.reference.delete();
     }
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("สั่งซื้อสินค้าสำเร็จ!")));

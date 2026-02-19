@@ -12,7 +12,7 @@ class StockMainPage extends StatefulWidget {
 }
 
 class _StockMainPageState extends State<StockMainPage> {
-  // ฟังก์ชันสำหรับลบสินค้า
+  // ลบสินค้า
   Future<void> _deleteProduct(DocumentReference productRef) async {
     try {
       await productRef.delete();
@@ -39,7 +39,7 @@ class _StockMainPageState extends State<StockMainPage> {
       body: user == null
           ? const Center(child: Text("Please login first"))
           : StreamBuilder<QuerySnapshot>(
-              // 2. Query ไปยังคอลเลกชัน products ของร้านค้าเรา
+              // Query ไปยัง products ของร้านค้า
               stream: FirebaseFirestore.instance
                   .collection('users')
                   .doc(user.uid)
@@ -76,17 +76,17 @@ class _StockMainPageState extends State<StockMainPage> {
                       margin: const EdgeInsets.symmetric(vertical: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       child: ListTile(
-                        // [Icon cart]
+                        // Icon cart
                         leading: const CircleAvatar(
                           backgroundColor: Colors.amberAccent,
                           child: Icon(Icons.shopping_cart, color: Colors.black),
                         ),
-                        // "ชื่อสินค้า"
+                        // ชื่อสินค้า
                         title: Text(
                           data['name'] ?? "No Name",
                           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                         ),
-                        // "รายละเอียด" และ "ราคา"
+                        // รายละเอียด, ราคา
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -137,7 +137,7 @@ class _StockMainPageState extends State<StockMainPage> {
   }
 }
 
-// เพิ่ม Extension สำหรับช่วยจัดการ Stream ที่ซ้อนกัน
+// Extension ช่วยจัดการ Stream ที่ซ้อนกัน
 extension StreamMap<T> on Stream<T> {
   Stream<R> switchMap<R>(Stream<R>? Function(T) transform) {
     return asyncExpand((event) => transform(event) ?? const Stream.empty());

@@ -22,7 +22,7 @@ class ShopProductsPage extends StatelessWidget {
         ),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // ดึงข้อมูลสินค้าจากคอลเลกชัน products ภายใต้ร้านค้านั้นๆ
+        // ดึงข้อมูลสินค้าจาก products ภายใต้ร้านค้านั้น ๆ
         stream: FirebaseFirestore.instance
             .collection('users')
             .doc(shopId)
@@ -105,7 +105,7 @@ class ShopProductsPage extends StatelessWidget {
                   'productId': productData['id'],
                   'name': productData['name'],
                   'price': productData['price'],
-                  'shopId': shopId, // จากตัวแปรในคลาส
+                  'shopId': shopId, 
                   'customerName': user.displayName ?? "Customer",
                   'addedAt': FieldValue.serverTimestamp(),
                 });

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AddPaymentInfoPage extends StatefulWidget {
-  final Map<String, String>? existingData; // รับข้อมูลเดิม
+  final Map<String, String>? existingData;
 
   const AddPaymentInfoPage({super.key, this.existingData});
 
@@ -18,7 +18,6 @@ class _AddPaymentInfoPageState extends State<AddPaymentInfoPage> {
   @override
   void initState() {
     super.initState();
-    // ถ้ามีข้อมูลเดิม ให้ใส่ในช่องกรอกเลย
     _bankCtrl = TextEditingController(text: widget.existingData?['bankName'] ?? '');
     _accNameCtrl = TextEditingController(text: widget.existingData?['accountName'] ?? '');
     _accNumCtrl = TextEditingController(text: widget.existingData?['accountNumber'] ?? '');
@@ -59,7 +58,6 @@ class _AddPaymentInfoPageState extends State<AddPaymentInfoPage> {
                 child: ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      // ส่งข้อมูลกลับไป
                       Navigator.pop(context, {
                         'bankName': _bankCtrl.text,
                         'accountNumber': _accNumCtrl.text,

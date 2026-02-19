@@ -8,7 +8,7 @@ class EditShopProfile extends StatefulWidget {
   final String? currentStoreName;
   final String? currentDesc;
   final String? currentPhone;
-  final dynamic currentImage; // รองรับ dynamic
+  final dynamic currentImage;
 
   const EditShopProfile({
     super.key, 
@@ -81,7 +81,7 @@ class _EditShopProfileState extends State<EditShopProfile> {
           padding: const EdgeInsets.symmetric(horizontal: 30),
           child: Column(
             children: [
-              // 1. ส่วนรูปโปรไฟล์
+              // รูปโปรไฟล์
               Container(
                 width: 160, height: 160,
                 decoration: BoxDecoration(
@@ -97,7 +97,7 @@ class _EditShopProfileState extends State<EditShopProfile> {
               ),
               const SizedBox(height: 20),
               
-              // 2. ปุ่ม Attach Picture
+              // ปุ่มแนบรูป
               ElevatedButton.icon(
                 onPressed: _pickImage,
                 icon: const Icon(Icons.file_upload_outlined, color: Colors.black),
@@ -110,7 +110,7 @@ class _EditShopProfileState extends State<EditShopProfile> {
               ),
               const SizedBox(height: 30),
 
-              // 3. Form
+              // ฟอร์ม
               Container(
                 padding: const EdgeInsets.all(25),
                 decoration: BoxDecoration(
@@ -151,13 +151,12 @@ class _EditShopProfileState extends State<EditShopProfile> {
               
               const SizedBox(height: 40),
 
-              // 4. ปุ่ม Confirm Edit - ส่งข้อมูลกลับ
+              // ปุ่มยืนยัน
               SizedBox(
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
                   onPressed: () {
-                    // ส่งข้อมูลที่แก้แล้วกลับไป
                     Navigator.pop(context, {
                       'name': _nameCtrl.text,
                       'desc': _descCtrl.text,

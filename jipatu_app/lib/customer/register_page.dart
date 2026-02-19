@@ -48,7 +48,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // สำเร็จ และ Login
+      // register สำเร็จ และ login
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registration Successful!')),
