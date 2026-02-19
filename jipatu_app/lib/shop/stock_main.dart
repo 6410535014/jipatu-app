@@ -1,13 +1,8 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart'; 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; 
-
-// Import หน้า AddStock เพื่อให้เรียกใช้ Class ได้โดยตรง
-import 'add_stock.dart'; 
-
-// ตัวแปรกลางสำหรับเก็บข้อมูลสินค้า
-List<Map<String, dynamic>> globalStockItems = []; 
+// 1. นำเข้า Firebase
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'add_stock.dart';
 
 class StockMainPage extends StatefulWidget {
   const StockMainPage({super.key});
@@ -17,40 +12,19 @@ class StockMainPage extends StatefulWidget {
 }
 
 class _StockMainPageState extends State<StockMainPage> {
-  
-  // ฟังก์ชันกดปุ่ม + (เพิ่มสินค้าใหม่)
-  Future<void> _navigateToAddStock() async {
-    // เปลี่ยนมาใช้ MaterialPageRoute เพื่อให้เหมือนกันทั้งระบบ
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddStockPage()),
-    );
-
-    if (result != null && result is Map<String, dynamic>) {
-      setState(() {
-        globalStockItems.add(result);
-      });
-    }
-  }
-
-  // ฟังก์ชันกดที่การ์ดสินค้า (แก้ไขสินค้าเดิม)
-  Future<void> _navigateToEditStock(int index) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddStockPage(existingItem: globalStockItems[index]), // ส่งข้อมูลเก่าไป
-      ),
-    );
-
-    if (result != null && result is Map<String, dynamic>) {
-      setState(() {
-        globalStockItems[index] = result; // อัปเดตข้อมูลที่ตำแหน่งเดิม
-      });
+  // ฟังก์ชันสำหรับลบสินค้า
+  Future<void> _deleteProduct(DocumentReference productRef) async {
+    try {
+      await productRef.delete();
+    } catch (e) {
+      debugPrint("Error deleting product: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Stock Management"),
@@ -62,131 +36,110 @@ class _StockMainPageState extends State<StockMainPage> {
           ),
         ),
       ),
-      body: globalStockItems.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.inbox, size: 80, color: Colors.grey[300]),
-                  const SizedBox(height: 10),
-                  const Text("ยังไม่มีสินค้า", style: TextStyle(color: Colors.grey)),
-                  const Text("กดปุ่ม + ด้านล่างเพื่อเพิ่มเมนู", style: TextStyle(color: Colors.grey)),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(10),
-              itemCount: globalStockItems.length,
-              itemBuilder: (context, index) {
-                final item = globalStockItems[index];
-                final XFile? imageFile = item['image'] as XFile?;
+      body: user == null
+          ? const Center(child: Text("Please login first"))
+          : StreamBuilder<QuerySnapshot>(
+              // 2. Query ไปยังคอลเลกชัน products ของร้านค้าเรา
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .collection('shop')
+                  .limit(1)
+                  .snapshots()
+                  .asyncMap((shopSnapshot) async {
+                if (shopSnapshot.docs.isEmpty) return null;
+                return shopSnapshot.docs.first.reference
+                    .collection('products')
+                    .orderBy('createdAt', descending: true)
+                    .snapshots();
+              }).switchMap((stream) => stream ?? Stream.empty()),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) return const Center(child: Text("Something went wrong"));
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                return Card(
-                  elevation: 3,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  // เพิ่ม InkWell เพื่อให้กดคลิกที่การ์ดได้
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () => _navigateToEditStock(index), // กดแล้วไปแก้ไข
-                    child: Padding(
-                      padding: const EdgeInsets.all(10),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // รูปภาพ
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(10),
+                final docs = snapshot.data?.docs ?? [];
+
+                if (docs.isEmpty) {
+                  return const Center(child: Text("No products in stock"));
+                }
+
+                return ListView.builder(
+                  itemCount: docs.length,
+                  padding: const EdgeInsets.all(10),
+                  itemBuilder: (context, index) {
+                    final doc = docs[index];
+                    final data = doc.data() as Map<String, dynamic>;
+                    
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      child: ListTile(
+                        // [Icon cart]
+                        leading: const CircleAvatar(
+                          backgroundColor: Colors.amberAccent,
+                          child: Icon(Icons.shopping_cart, color: Colors.black),
+                        ),
+                        // "ชื่อสินค้า"
+                        title: Text(
+                          data['name'] ?? "No Name",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                        // "รายละเอียด" และ "ราคา"
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(data['desc'] ?? ""),
+                            Text(
+                              "฿${data['price'] ?? '0'}",
+                              style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
                             ),
-                            child: imageFile != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(10),
-                                    child: kIsWeb
-                                        ? Image.network(
-                                            imageFile.path,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (ctx, err, stack) => const Icon(Icons.error),
-                                          )
-                                        : Image.file(
-                                            File(imageFile.path),
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (ctx, err, stack) => const Icon(Icons.error),
-                                          ),
-                                  )
-                                : const Icon(Icons.fastfood, color: Colors.grey, size: 30),
-                          ),
-                          const SizedBox(width: 15),
-                          
-                          // ข้อความ
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item['name'] ?? "ไม่มีชื่อ",
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  "ราคา: ${item['price']} ฿",
-                                  style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  item['desc'] ?? "",
-                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
+                          ],
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => _deleteProduct(doc.reference),
+                        ),
+                        onTap: () {
+                          // ส่งข้อมูลไปแก้ไขที่หน้า AddStockPage
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddStockPage(
+                                existingItem: {
+                                  'id': doc.id,
+                                  'name': data['name'],
+                                  'desc': data['desc'],
+                                  'price': data['price'],
+                                },
+                              ),
                             ),
-                          ),
-                          
-                          // ปุ่มลบ
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
-                            onPressed: () {
-                              // showDialog ยืนยันก่อนลบ (Optional)
-                              showDialog(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text("ลบรายการ?"),
-                                  content: const Text("คุณต้องการลบรายการนี้ใช่หรือไม่?"),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx),
-                                      child: const Text("ยกเลิก"),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          globalStockItems.removeAt(index);
-                                        });
-                                        Navigator.pop(ctx);
-                                      },
-                                      child: const Text("ลบ", style: TextStyle(color: Colors.red)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 );
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddStock,
-        backgroundColor: const Color(0xFFFFB300),
-        child: const Icon(Icons.add, size: 30, color: Colors.black),
+        backgroundColor: Colors.amber,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddStockPage()),
+          );
+        },
+        child: const Icon(Icons.add, color: Colors.black),
       ),
     );
+  }
+}
+
+// เพิ่ม Extension สำหรับช่วยจัดการ Stream ที่ซ้อนกัน
+extension StreamMap<T> on Stream<T> {
+  Stream<R> switchMap<R>(Stream<R>? Function(T) transform) {
+    return asyncExpand((event) => transform(event) ?? const Stream.empty());
   }
 }
