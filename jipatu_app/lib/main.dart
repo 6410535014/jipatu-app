@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+//import 'firebase_options.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 import 'dashboard_page.dart';
+import 'firebase_config.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(const MyApp());
+ await Firebase.initializeApp(
+  options: const FirebaseOptions(
+    apiKey: FirebaseConfig.apiKey,
+    appId: FirebaseConfig.appId,
+    messagingSenderId: FirebaseConfig.messagingSenderId,
+    projectId: FirebaseConfig.projectId,
+    authDomain: FirebaseConfig.authDomain,
+    storageBucket: FirebaseConfig.storageBucket,
+  ),
+);
+  runApp(const MyApp()); 
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
