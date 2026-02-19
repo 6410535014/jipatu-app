@@ -1,45 +1,97 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class MyCartPage extends StatelessWidget {
+  const MyCartPage({super.key});
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("ตะกร้าของฉัน")),
+      appBar: AppBar(
+        title: const Text("ตะกร้าของฉัน", style: TextStyle(color: Colors.white)),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Color(0xFFD32F2F), Color(0xFFFFB300)]),
+          ),
+        ),
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-          .collection('users')
-          .doc(FirebaseAuth.instance.currentUser?.uid)
-          .collection('cart')
-          .snapshots(),
+            .collection('users')
+            .doc(user?.uid)
+            .collection('cart')
+            .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const CircularProgressIndicator();
-          final cartItems = snapshot.data!.docs;
+          if (snapshot.hasError) return const Center(child: Text("เกิดข้อผิดพลาด"));
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final cartItems = snapshot.data?.docs ?? [];
+          if (cartItems.isEmpty) return const Center(child: Text("ไม่มีสินค้าในตะกร้า"));
+
+          // คำนวณราคารวมทั้งหมด
+          double totalPrice = cartItems.fold(0, (sum, item) {
+            final data = item.data() as Map<String, dynamic>;
+            return sum + (double.tryParse(data['price'].toString()) ?? 0);
+          });
 
           return Column(
             children: [
               Expanded(
                 child: ListView.builder(
                   itemCount: cartItems.length,
+                  padding: const EdgeInsets.all(10),
                   itemBuilder: (context, index) {
-                    var item = cartItems[index].data() as Map<String, dynamic>;
-                    return ListTile(
-                      title: Text(item['name']),
-                      subtitle: Text("฿${item['price']}"),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => cartItems[index].reference.delete(),
+                    final data = cartItems[index].data() as Map<String, dynamic>;
+                    return Card(
+                      child: ListTile(
+                        title: Text(data['name'] ?? ""),
+                        subtitle: Text("฿${data['price']}", style: const TextStyle(color: Colors.red)),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                          onPressed: () => cartItems[index].reference.delete(),
+                        ),
                       ),
                     );
                   },
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: ElevatedButton(
-                  onPressed: () => _checkout(context, cartItems),
-                  child: const Text("สั่งซื้อสินค้า"),
+              // ส่วนแสดงราคารวมและปุ่มสั่งซื้อ
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text("ราคารวมทั้งหมด:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text("฿${totalPrice.toStringAsFixed(2)}", 
+                          style: const TextStyle(fontSize: 20, color: Colors.red, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () => _showConfirmOrderDialog(context, cartItems, user!.uid),
+                        child: const Text("สั่งซื้อสินค้า", style: TextStyle(fontSize: 18, color: Colors.white)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -49,30 +101,63 @@ class MyCartPage extends StatelessWidget {
     );
   }
 
-  void _checkout(BuildContext context, List<QueryDocumentSnapshot> items) async {
-    final user = FirebaseAuth.instance.currentUser;
+  // Pop-up ยืนยันการสั่งซื้อ
+  void _showConfirmOrderDialog(BuildContext context, List<QueryDocumentSnapshot> items, String uid) async {
+    // ดึงข้อมูล username จาก Firestore collection 'users'
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    
+    // สมมติว่าคุณเก็บชื่อผู้ใช้ในฟิลด์ชื่อ 'username' หรือ 'name'
+    String? username = userDoc.exists ? (userDoc.data() as Map<String, dynamic>)['username'] : null;
+    
+    // หากไม่มี username ใน database ให้ลองใช้ displayName หรือสุดท้ายคือ "ไม่ระบุชื่อ"
+    String finalCustomerName = username ?? FirebaseAuth.instance.currentUser?.displayName ?? "ไม่ระบุชื่อ";
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("ยืนยันการสั่งซื้อ"),
+        content: Text("คุณต้องการสั่งซื้อสินค้าจำนวน ${items.length} รายการใช่หรือไม่?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ยกเลิก")),
+          ElevatedButton(
+            onPressed: () {
+              _checkout(context, items, uid, finalCustomerName); // ส่งชื่อที่ดึงได้เข้าไป
+              Navigator.pop(context);
+            },
+            child: const Text("ยืนยันการสั่งซื้อ"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _checkout(BuildContext context, List<QueryDocumentSnapshot> items, String uid, String customerName) async {
     for (var item in items) {
       final data = item.data() as Map<String, dynamic>;
-      final orderId = DateTime.now().millisecondsSinceEpoch.toString();
+      // สร้าง ID ออเดอร์ให้ตรงกันทั้งสองฝั่ง
+      final orderId = DateTime.now().millisecondsSinceEpoch.toString() + items.indexOf(item).toString();
 
-      // 1. ส่งไปยังประวัติการสั่งซื้อของลูกค้า
-      await FirebaseFirestore.instance.collection('users').doc(user!.uid).collection('orders').doc(orderId).set({
+      // 1. บันทึกลง 'orders' ของลูกค้า
+      await FirebaseFirestore.instance.collection('users').doc(uid).collection('orders').doc(orderId).set({
         ...data,
         'orderId': orderId,
-        'status': 'Waiting...',
+        'status': 'Pending',
         'orderDate': FieldValue.serverTimestamp(),
       });
 
-      // 2. ส่งไปยังรายการออเดอร์เข้าของเจ้าของร้าน (shopId เก็บไว้ตอนเพิ่มลงตะกร้า)
+      // 2. บันทึกลง 'incoming_orders' ของร้านค้า
       await FirebaseFirestore.instance.collection('users').doc(data['shopId']).collection('incoming_orders').doc(orderId).set({
         ...data,
         'orderId': orderId,
-        'customerId': user.uid,
-        'status': 'Waiting...',
+        'customerId': uid,
+        'customerName': customerName, // ใช้ชื่อที่ดึงมาจาก Firestore
+        'status': 'Pending',
         'orderDate': FieldValue.serverTimestamp(),
       });
 
-      await item.reference.delete(); // ลบจากตะกร้า
+      // 3. ลบสินค้าออกจากตะกร้า
+      await item.reference.delete();
     }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("สั่งซื้อสินค้าสำเร็จ!")));
   }
 }
