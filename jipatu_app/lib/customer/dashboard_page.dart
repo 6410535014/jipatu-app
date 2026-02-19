@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'profile_page.dart';
 
@@ -148,6 +149,7 @@ Widget _buildHomeContent() {
   }
 
   Widget _buildShopList() {
+    final currentUser = FirebaseAuth.instance.currentUser;
     // ดึงข้อมูลจากคอลเลกชัน 'shops' หลัก
     Query query = FirebaseFirestore.instance.collection('shops');
 
@@ -167,7 +169,10 @@ Widget _buildHomeContent() {
         if (snapshot.hasError) return const Center(child: Text("Something went wrong"));
         if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
 
-        final docs = snapshot.data?.docs ?? [];
+        final docs = snapshot.data?.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['ownerUid'] != currentUser?.uid; // คืนค่าเฉพาะร้านที่เจ้าของไม่ใช่เรา
+        }).toList() ?? [];
         
         if (docs.isEmpty) {
           return const Center(

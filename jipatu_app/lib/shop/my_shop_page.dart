@@ -46,6 +46,7 @@ class _MyShopPageState extends State<MyShopPage> {
       displayPhone = widget.phone ?? "";
       displayImage = widget.profileImage;
       _isLoading = false;
+      _fetchShopData();
     } else {
       _fetchShopData();
     }
