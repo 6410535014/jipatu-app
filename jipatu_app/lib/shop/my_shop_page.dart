@@ -4,15 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
-// --- Import หน้าอื่นๆ ---
+import 'package:jipatu_app/customer/dashboard_page.dart';
 import 'edit_shop_profile.dart';
 import 'payment_info.dart';
 import 'stock_main.dart';
 import 'order_status.dart'; 
 
 class MyShopPage extends StatefulWidget {
-  // เพิ่ม parameters เพื่อรับข้อมูลที่ส่งมาจากหน้า Register
   final String? storeName;
   final String? description;
   final String? phone;
@@ -32,7 +30,7 @@ class MyShopPage extends StatefulWidget {
 
 class _MyShopPageState extends State<MyShopPage> {
   bool isOpen = false;
-  bool _isLoading = true; // เพิ่ม Loading state
+  bool _isLoading = true;
   
   String displayName = "";
   String displayDesc = "";
@@ -42,7 +40,6 @@ class _MyShopPageState extends State<MyShopPage> {
   @override
   void initState() {
     super.initState();
-    // ถ้ามีการส่งค่ามาจาก Constructor (เช่น มาจากหน้า Register) ให้ใช้ค่านั้นเลย
     if (widget.storeName != null) {
       displayName = widget.storeName!;
       displayDesc = widget.description ?? "";
@@ -50,12 +47,33 @@ class _MyShopPageState extends State<MyShopPage> {
       displayImage = widget.profileImage;
       _isLoading = false;
     } else {
-      // ถ้าไม่มีค่าส่งมา (เช่น มาจากหน้า Profile) ให้ดึงข้อมูลจาก Firebase
       _fetchShopData();
     }
   }
 
-  // ฟังก์ชันดึงข้อมูลจาก Firestore
+  Future<void> _updateShopStatus(bool status) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final shopSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('shop')
+            .limit(1)
+            .get();
+
+        if (shopSnapshot.docs.isNotEmpty) {
+          await shopSnapshot.docs.first.reference.update({
+            'isOpen': status,
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
+        }
+      } catch (e) {
+        debugPrint("Error updating shop status: $e");
+      }
+    }
+  }
+
   Future<void> _fetchShopData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -74,6 +92,7 @@ class _MyShopPageState extends State<MyShopPage> {
             displayDesc = data['description'] ?? "";
             displayPhone = data['phone'] ?? "";
             displayImage = data['profileImage'];
+            isOpen = data['isOpen'] ?? false; 
             _isLoading = false;
           });
         }
@@ -86,7 +105,6 @@ class _MyShopPageState extends State<MyShopPage> {
 
   @override
   Widget build(BuildContext context) {
-    // แสดงผล Loading ระหว่างรอข้อมูล (เฉพาะกรณีที่ไม่มีข้อมูลส่งมาจากหน้าก่อนหน้า)
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -106,7 +124,6 @@ class _MyShopPageState extends State<MyShopPage> {
         children: [
           Column(
             children: [
-              // Header Gradient
               Container(
                 width: double.infinity,
                 height: 250,
@@ -130,7 +147,6 @@ class _MyShopPageState extends State<MyShopPage> {
               ),
               const SizedBox(height: 70),
 
-              // ข้อมูลร้าน
               Text(
                 displayName.isEmpty ? "No Name" : displayName,
                 style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
@@ -141,7 +157,6 @@ class _MyShopPageState extends State<MyShopPage> {
               ),
               const SizedBox(height: 30),
 
-              // พื้นที่เมนู
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -193,7 +208,12 @@ class _MyShopPageState extends State<MyShopPage> {
                         icon: Icons.person_outline,
                         color: const Color(0xFF4CAF50),
                         text: 'Switch to My Profile',
-                        onTap: () => Navigator.pop(context), 
+                        onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => const DashboardPage()),
+                            );
+                        },
                       ),
                       const SizedBox(height: 20),
                       _buildOpenCloseToggle(),
@@ -205,7 +225,6 @@ class _MyShopPageState extends State<MyShopPage> {
             ],
           ),
 
-          // รูปโปรไฟล์
           Positioned(
             top: 185,
             left: 0,
@@ -229,7 +248,6 @@ class _MyShopPageState extends State<MyShopPage> {
     );
   }
 
-  // --- Widget Helpers เหมือนเดิม ---
   Widget _buildMenuItem({required IconData icon, required Color color, required String text, required VoidCallback onTap}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 8),
@@ -260,7 +278,10 @@ class _MyShopPageState extends State<MyShopPage> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => isOpen = true),
+              onTap: () {
+                setState(() => isOpen = true);
+                _updateShopStatus(true);
+              },
               child: Container(
                 decoration: BoxDecoration(color: isOpen ? const Color(0xFF66BB6A) : Colors.transparent, borderRadius: BorderRadius.circular(30)),
                 alignment: Alignment.center,
@@ -270,7 +291,10 @@ class _MyShopPageState extends State<MyShopPage> {
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => isOpen = false),
+              onTap: () {
+                setState(() => isOpen = false);
+                _updateShopStatus(false);
+              },
               child: Container(
                 decoration: BoxDecoration(color: !isOpen ? const Color(0xFF750020) : Colors.transparent, borderRadius: BorderRadius.circular(30)),
                 alignment: Alignment.center,

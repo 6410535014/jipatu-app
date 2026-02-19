@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:jipatu_app/login_page.dart';
+import 'package:jipatu_app/customer/login_page.dart';
 import 'package:jipatu_app/shop/user_register_shop.dart';
-import 'package:jipatu_app/shop/my_shop_page.dart';         
+import 'package:jipatu_app/shop/select_shop_page.dart'; 
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -41,44 +41,34 @@ class ProfilePage extends StatelessWidget {
             .doc(user?.uid)
             .get(),
         builder: (context, snapshot) {
-          // ค่าเริ่มต้นระหว่างรอโหลดข้อมูล
           String username = "Loading...";
-          bool hasShop = false;
-
           if (snapshot.hasData && snapshot.data!.exists) {
             final data = snapshot.data!.data() as Map<String, dynamic>;
             username = data['username'] ?? 'No Name';
-            hasShop = data['hasShop'] ?? false;
           }
 
           return SingleChildScrollView(
             child: Column(
               children: [
-                // ส่วนที่ 1: Header (รูปโปรไฟล์ และ ชื่อ/อีเมล)
                 _buildProfileHeader(username, user?.email),
-
                 const SizedBox(height: 25),
-
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 25),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ส่วนที่ 2: Edit Profile
                       _buildMenuSection([
                         _buildMenuItem(
                           Icons.edit_outlined,
                           'Edit Profile',
                           () {
-                            print("Go to Edit Profile");
+                            debugPrint("Go to Edit Profile");
                           },
                           bgColor: const Color(0xFFFF5757),
                           iconColor: Colors.white,
                         ),
                       ]),
-
                       const SizedBox(height: 25),
-
                       const Text(
                         "General Settings",
                         style: TextStyle(
@@ -88,14 +78,12 @@ class ProfilePage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-
-                      // ส่วนที่ 3: General Settings Group
                       _buildMenuSection([
                         _buildMenuItem(
                           Icons.dark_mode_outlined,
                           'Mode (Dark & Light)',
                           () {
-                            print("Switch Mode");
+                            debugPrint("Switch Mode");
                           },
                           bgColor: const Color(0xFFFF5757),
                           iconColor: Colors.white,
@@ -104,36 +92,20 @@ class ProfilePage extends StatelessWidget {
                           Icons.language_outlined,
                           'Language',
                           () {
-                            print("Change Language");
+                            debugPrint("Change Language");
                           },
                           bgColor: const Color(0xFFFF5757),
                           iconColor: Colors.white,
                         ),
-                        // ปุ่ม Switch to My Shop ที่ทำงานตามเงื่อนไข hasShop
                         _buildMenuItem(
                           Icons.storefront,
                           'Switch to My Shop',
-                          () {
-                            if (hasShop) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const MyShopPage()),
-                              );
-                            } else {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const UserRegisterShopPage()),
-                              );
-                            }
-                          },
+                          () => _handleShopNavigation(context, user?.uid),
                           bgColor: const Color(0xFF34C759),
                           iconColor: Colors.white,
                         ),
                       ]),
-
                       const SizedBox(height: 30),
-
-                      // ส่วนที่ 4: Sign Out Button
                       Center(
                         child: TextButton(
                           onPressed: () => _showSignOutDialog(context),
@@ -159,7 +131,34 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Helper Widget สำหรับส่วน Header
+  Future<void> _handleShopNavigation(BuildContext context, String? uid) async {
+    if (uid == null) return;
+
+    try {
+      final shopSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .collection('shop')
+          .get();
+
+      if (!context.mounted) return;
+
+      if (shopSnapshot.docs.isEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const UserRegisterShopPage()),
+        );
+      } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SelectShopPage()),
+          );
+      }
+    } catch (e) {
+      debugPrint("Error checking shop data: $e");
+    }
+  }
+
   Widget _buildProfileHeader(String username, String? email) {
     return Container(
       width: double.infinity,
@@ -206,7 +205,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Helper Widget สำหรับกลุ่มเมนู
   Widget _buildMenuSection(List<Widget> items) {
     return Container(
       decoration: BoxDecoration(
@@ -224,7 +222,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Helper Widget สำหรับรายการเมนูแต่ละแถว
   Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap, {Color? bgColor, Color? iconColor}) {
     return ListTile(
       leading: Container(
@@ -248,7 +245,6 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Helper Function สำหรับแสดง Dialog ยืนยันการออกจากระบบ
   void _showSignOutDialog(BuildContext context) {
     showDialog(
       context: context,

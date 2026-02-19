@@ -24,7 +24,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // การสมัครสมาชิก
+  // สมัครสมาชิก
   Future<void> _registerAccount() async {
     // ตรวจสอบการกรอกข้อมูล
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _usernameController.text.isEmpty) {
@@ -46,10 +46,9 @@ class _RegisterPageState extends State<RegisterPage> {
         'username': _usernameController.text.trim(),
         'email': _emailController.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
-        'hasShop': false,
       });
 
-      // สำเร็จ แจ้งเตือนและกลับไปหน้า Login
+      // สำเร็จ และ Login
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registration Successful!')),
