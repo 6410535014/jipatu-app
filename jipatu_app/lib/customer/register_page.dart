@@ -46,6 +46,7 @@ class _RegisterPageState extends State<RegisterPage> {
         'username': _usernameController.text.trim(),
         'email': _emailController.text.trim(),
         'createdAt': FieldValue.serverTimestamp(),
+        'hasShop': false,
       });
 
       // สำเร็จ แจ้งเตือนและกลับไปหน้า Login
