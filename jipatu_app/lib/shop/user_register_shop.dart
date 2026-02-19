@@ -45,10 +45,9 @@ class _UserRegisterShopPageState extends State<UserRegisterShopPage> {
     try {
       String? finalImageUrl;
 
-      // 1. จัดการรูปภาพ
+      // 1. จัดการรูปภาพ (โค้ดเดิม)
       if (_pickedImage != null) {
         if (_pickedImage is XFile) {
-          // อัปโหลดไฟล์จริงไป Firebase Storage
           File file = File((_pickedImage as XFile).path);
           String fileName = 'shop_${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
           Reference ref = FirebaseStorage.instance.ref().child('shops/$fileName');
@@ -56,24 +55,33 @@ class _UserRegisterShopPageState extends State<UserRegisterShopPage> {
           await ref.putFile(file);
           finalImageUrl = await ref.getDownloadURL();
         } else if (_pickedImage is String) {
-          // ใช้ URL ตรงๆ (กรณีเลือก Mockup)
           finalImageUrl = _pickedImage;
         }
       }
 
-      // 2. บันทึกลง Firestore (users > uid > shop)
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('shop')
-          .add({
+      // เตรียมข้อมูลที่จะบันทึก
+      final shopData = {
+        'ownerUid': user.uid, // เพิ่ม uid เจ้าของเพื่อให้รู้ว่าเป็นร้านของใคร
         'storeName': _storeNameController.text.trim(),
         'description': _descController.text.trim(),
         'phone': _phoneController.text.trim(),
         'category': _selectedCategory,
         'profileImage': finalImageUrl,
         'createdAt': FieldValue.serverTimestamp(),
-      });
+        'isOpen': false,
+      };
+
+      // 2. บันทึกลง Firestore (users > uid > shop) - โค้ดเดิม
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('shop')
+          .add(shopData);
+
+      // 3. บันทึกลงคอลเลกชันหลัก (shops) - ส่วนที่เพิ่มใหม่ตามความต้องการของคุณ
+      await FirebaseFirestore.instance
+          .collection('shops')
+          .add(shopData);
 
       if (mounted) {
         Navigator.push(context, MaterialPageRoute(builder: (context) => MyShopPage(

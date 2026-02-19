@@ -55,19 +55,40 @@ class _MyShopPageState extends State<MyShopPage> {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
-        final shopSnapshot = await FirebaseFirestore.instance
+        final batch = FirebaseFirestore.instance.batch();
+
+        // 1. หาเอกสารใน users > uid > shop เพื่ออัปเดต
+        final userShopSnapshot = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .collection('shop')
             .limit(1)
             .get();
 
-        if (shopSnapshot.docs.isNotEmpty) {
-          await shopSnapshot.docs.first.reference.update({
+        if (userShopSnapshot.docs.isNotEmpty) {
+          batch.update(userShopSnapshot.docs.first.reference, {
             'isOpen': status,
             'lastUpdated': FieldValue.serverTimestamp(),
           });
         }
+
+        // 2. หาเอกสารใน shops (คอลเลกชันหลัก) ที่มี ownerUid ตรงกับ user.uid
+        final globalShopSnapshot = await FirebaseFirestore.instance
+            .collection('shops')
+            .where('ownerUid', isEqualTo: user.uid)
+            .limit(1)
+            .get();
+
+        if (globalShopSnapshot.docs.isNotEmpty) {
+          batch.update(globalShopSnapshot.docs.first.reference, {
+            'isOpen': status,
+            'lastUpdated': FieldValue.serverTimestamp(),
+          });
+        }
+
+        // ทำการ commit batch เพื่ออัปเดตทั้งสองที่พร้อมกัน
+        await batch.commit();
+
       } catch (e) {
         debugPrint("Error updating shop status: $e");
       }
