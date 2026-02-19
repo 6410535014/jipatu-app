@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'profile_page.dart';
+import 'package:jipatu_app/shop/shop_products_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -205,7 +206,17 @@ Widget _buildHomeContent() {
                 subtitle: Text(isOpen ? "Open" : "Closed", style: TextStyle(color: isOpen ? Colors.green : Colors.red)),
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
-                  // ไปยังหน้าร้านค้าของลูกค้า (ถ้ามี)
+                  // นำทางไปยังหน้าร้านค้าสำหรับลูกค้า
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ShopProductsPage(
+                        // ใช้ ownerUid เป็น shopId เพื่อไปดึงสินค้าใน sub-collection
+                        shopId: data['ownerUid'] ?? '', 
+                        shopName: name,
+                      ),
+                    ),
+                  );
                 },
               ),
             );
