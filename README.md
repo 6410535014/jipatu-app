@@ -1,10 +1,10 @@
 # Jipatu-app
 
+
 ## Course Information
 * **Course:** CN332
 * **Academic Year:** 2025
 
----
 
 ## Team Members
 | Name | Student ID |
